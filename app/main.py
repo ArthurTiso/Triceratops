@@ -6,9 +6,12 @@ from protocol.decoder import ProtocolDecoder
 from core.system_state import SystemState
 from core.processor import Processor
 
+from receiver.rf_receiver import RFReceiver
+
+receiver = RFReceiver()
 
 def main():
-    USAR_RF = False
+    USAR_RF = True
     if USAR_RF:
         from receiver.rf_receiver import RFReceiver
         receiver = RFReceiver()

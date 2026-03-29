@@ -8,16 +8,32 @@ class RFReceiver(BaseReceiver):
         self.rfdevice.enable_rx()
 
     def receber(self):
-        if self.rfdevice.rx_code_timestamp is not None:
+        if self.rfdevice.rx_code_timestamp:
             codigo = self.rfdevice.rx_code
             self.rfdevice.rx_code_timestamp = None
 
-            # 🔥 TEMPORÁRIO: simula protocolo
-            pacote = f"***1000{codigo:04d}{codigo:04d}0000000100###"
+            try:
+                peso = int(codigo)
 
-            return pacote
+                # reconstrução do sistema
+                pacote = self.montar_pacote(peso)
+
+                return pacote
+
+            except:
+                return None
 
         return None
+
+    def montar_pacote(self, peso):
+        peso_max = peso  # simplificação inicial
+        tempo = 0
+        flag = 1
+
+        # montar no formato esperado
+        pacote = f"***100{peso_max:04d}{peso:04d}0000{tempo:04d}{flag}00###"
+
+        return pacote
 
     def cleanup(self):
         self.rfdevice.cleanup()
