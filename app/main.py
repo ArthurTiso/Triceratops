@@ -1,54 +1,70 @@
 import time
-import json
+import sys
 
-from receiver.simulated_receiver import SimulatedReceiver
 from protocol.decoder import ProtocolDecoder
 from core.system_state import SystemState
 from core.processor import Processor
 
-from receiver.rf_receiver import RFReceiver
+# 🔥 CONTROLE AQUI
+USAR_RF = False  # True = Raspberry | False = Simulador
 
-receiver = RFReceiver()
 
 def main():
-    USAR_RF = True
-    if USAR_RF:
-        from receiver.rf_receiver import RFReceiver
-        receiver = RFReceiver()
-    else:
-        from receiver.simulated_receiver import SimulatedReceiver
-        receiver = SimulatedReceiver()
-    decoder = ProtocolDecoder()
-    state = SystemState()
-    processor = Processor(state)
+    receiver = None
 
-    while True:
-        pacote = receiver.receber()
+    try:
+        # 🔥 ESCOLHA DO RECEIVER
+        if USAR_RF:
+            from receiver.rf_receiver import RFReceiver
+            receiver = RFReceiver(gpio=27)
+            print("📡 Modo RF ativado")
 
-        if not pacote:
-            continue
+        else:
+            from receiver.simulated_receiver import SimulatedReceiver
+            receiver = SimulatedReceiver()
+            print("🧪 Modo SIMULADOR ativado")
 
-        print("PACOTE:", pacote)
+        decoder = ProtocolDecoder()
+        state = SystemState()
+        processor = Processor(state)
 
-        try:
-            dados = decoder.decodificar(pacote)
+        print("Sistema iniciado. Aguardando pacotes...\n")
 
-            processor.processar(dados)
+        while True:
+            pacote = receiver.receber()
+            time.sleep(1.5)
+            if not pacote:
+                continue
 
-            snapshot = state.get_snapshot()
+            print("PACOTE:", pacote)
 
-            print("STATE:", snapshot)
+            try:
+                dados = decoder.decodificar(pacote)
 
-            # 🔥 SALVA PARA O DASHBOARD
-            with open("state.json", "w") as f:
-                json.dump(snapshot, f)
+                processor.processar(dados)
 
-        except Exception as e:
-            print("ERRO:", e)
+                print("STATE:", state.get_snapshot())
 
-        print("-" * 50)
+                import json
 
-        time.sleep(1)
+                with open("data.json", "w") as f:
+                    json.dump(state.get_snapshot(), f)
+
+            except Exception as e:
+                print("ERRO:", e)
+
+            print("-" * 50)
+
+            # 🔥 IMPORTANTE PARA RF (não perder pacote)
+            time.sleep(0.1)
+
+    except KeyboardInterrupt:
+        print("\nFinalizando sistema...")
+
+    finally:
+        # 🔥 LIMPEZA GPIO (só RF tem isso)
+        if receiver and hasattr(receiver, 'cleanup'):
+            receiver.cleanup()
 
 
 if __name__ == "__main__":
