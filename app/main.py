@@ -32,7 +32,7 @@ def main():
 
         while True:
             pacote = receiver.receber()
-            time.sleep(1.5)
+            time.sleep(0.4)
             if not pacote:
                 continue
 
